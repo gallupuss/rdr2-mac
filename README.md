@@ -21,8 +21,11 @@ artifacts must not be presented as a verified release.
 
 ## Requirements
 
-- Apple Silicon Mac running macOS 14 or later; ample storage for a separate
-  Windows prefix and the game's current Steam storage requirements.
+- Apple Silicon Mac. The app interface targets macOS 14 or later; this is **not**
+  a game-compatibility guarantee. The original playable setup used M4, macOS
+  Tahoe, WineCX 26.3.0 and GPTK 4 beta 2. Follow Apple's OS requirements for the
+  toolkit you supply, and allow ample storage for a separate Windows prefix
+  and the game's current Steam storage requirements.
 - A Steam license for RDR2, vendor accounts, internet access, and any required
   Rockstar activation. Supported here: Steam app **1174180**, not Epic or console.
 - A compatible neutral WineCX runtime and Apple's Game Porting Toolkit evaluation
@@ -43,8 +46,11 @@ artifacts must not be presented as a verified release.
    Steam's Install action must discover/verify it and register the installation;
    the app does not fabricate Steam installation state.
 3. Save settings, install the managed environment, and complete any vendor
-   installer windows. Open Steam to sign in and install/download RDR2. No terminal
-   is required for app users, and no credentials should be pasted into the app.
+   installer windows. Open Steam to sign in and install/download RDR2. Run RDR2
+   from Steam once to complete the official Rockstar prerequisites, then use
+   Stop and Repair to install the compatibility helpers before using Play.
+   No terminal is required for app users, and no credentials should be pasted
+   into the app.
 4. Select Automatic, 1080p, or 900p and choose Play. Stop performs cleanup scoped
    to the managed prefix; it does not kill other Wine applications.
 5. Use Repair only while stopped after vendor updates. If helper delegation or a

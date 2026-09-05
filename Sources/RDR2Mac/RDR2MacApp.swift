@@ -9,7 +9,7 @@ struct RDR2MacApp: App {
         Window("RDR2 for Mac (unofficial)", id: "launcher") {
             LauncherView(model: delegate.model)
         }
-        .defaultSize(width: 760, height: 840)
+        .defaultSize(width: 760, height: 700)
         .commands {
             CommandGroup(replacing: .newItem) { }
             CommandGroup(replacing: .appInfo) {

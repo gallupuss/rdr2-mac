@@ -34,7 +34,7 @@ struct LauncherView: View {
             .frame(maxWidth: .infinity)
         }
         .background(Color(nsColor: .windowBackgroundColor))
-        .frame(minWidth: 660, minHeight: 680)
+        .frame(minWidth: 660, minHeight: 560)
         .onChange(of: model.setupComplete) { _, complete in
             if complete { showSetup = false }
         }
@@ -73,11 +73,19 @@ struct LauncherView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("engineStatus")
             HStack(spacing: 10) {
-                Button { model.save(then: "play") } label: {
-                    Label("Play", systemImage: "play.fill").frame(minWidth: 64)
+                Button {
+                    if !model.setupComplete && model.gptkPath.isEmpty {
+                        model.chooseDirectory(\.gptkPath)
+                    } else {
+                        model.save(then: model.setupComplete ? "play" : "install")
+                    }
+                } label: {
+                    Label(model.setupComplete ? "Play" : (model.gptkPath.isEmpty ? "Choose Apple Toolkit…" : "Install & Set Up"),
+                          systemImage: model.setupComplete ? "play.fill" : "shippingbox")
+                        .frame(minWidth: 64)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(model.busy || model.hasSession || !model.ready)
+                .disabled(model.busy || model.hasSession || (model.setupComplete && !model.ready))
                 .keyboardShortcut(.return, modifiers: [.command])
                 Button { model.save(then: "steam") } label: {
                     Label("Open Steam", systemImage: "arrow.up.forward.app")
@@ -92,6 +100,10 @@ struct LauncherView: View {
             .controlSize(.large)
             Text("Sign in and download the game in Steam. Keep all credential entry in the Steam and Rockstar windows.")
                 .font(.caption).foregroundStyle(.secondary)
+            if !model.setupComplete {
+                Link("Download Apple’s toolkit", destination: URL(string: "https://developer.apple.com/download/all/?q=game%20porting%20toolkit")!)
+                    .font(.callout)
+            }
         }
         .padding(20)
         .background(.background, in: RoundedRectangle(cornerRadius: 14))
@@ -107,7 +119,7 @@ struct LauncherView: View {
             directory("Import game (optional)", placeholder: "Import a separate copy, or download in Steam", text: $model.gamePath, keyPath: \.gamePath)
             Text("An optional existing game is imported as an independent copy, using an APFS clone when available. The source is not modified. Leave this empty to install the game through Steam.")
                 .font(.caption).foregroundStyle(.secondary)
-            Text("For Apple’s toolkit: follow the official link below, accept Apple’s terms, and download the toolkit. Open its disk image, then the nested redistributable disk image. Copy the redistributable folder to a stable location and choose the folder containing lib/external above. Rosetta is required for Intel Windows compatibility.")
+            Text("Download Apple’s toolkit using the official link below. Open its disk image, then the “Evaluation environment for Windows games” disk image and accept Apple’s terms. Choose its redist folder, which contains lib/external. Install imports those libraries into this app’s storage; afterwards you can eject the disk images. Rosetta is required for Intel Windows compatibility.")
                 .font(.caption).foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline) {
                 Text("Display").frame(width: 165, alignment: .leading)
@@ -123,15 +135,17 @@ struct LauncherView: View {
                 .font(.caption).foregroundStyle(.secondary)
             HStack {
                 Button("Save Settings") { model.save() }
-                Button(model.setupComplete ? "Run Setup Again" : "Install & Set Up") { model.save(then: "install") }
+                if model.setupComplete {
+                    Button("Run Setup Again") { model.save(then: "install") }
+                }
                 Spacer()
             }
             Text("Setup creates a separate managed bottle. Complete the vendor installer and any consent prompts in its own window; setup is not finished until the engine confirms it.")
                 .font(.caption).foregroundStyle(.secondary)
             Divider()
             HStack(spacing: 18) {
-                Link("CrossOver / Wine information ↗", destination: URL(string: "https://www.codeweavers.com/crossover")!)
-                Link("Apple toolkit information ↗", destination: URL(string: "https://developer.apple.com/games/game-porting-toolkit/")!)
+                Link("Wine runtime source ↗", destination: URL(string: "https://github.com/mikaelhug/Silo/releases/tag/wine-cx-26.3.0")!)
+                Link("Apple toolkit download ↗", destination: URL(string: "https://developer.apple.com/download/all/?q=game%20porting%20toolkit")!)
             }
             .font(.caption)
             Text("These are vendor information pages, not bundled dependencies or a guarantee of compatibility. Obtain dependencies under their own licenses. Clean-install playability on a second Mac has not been verified.")
