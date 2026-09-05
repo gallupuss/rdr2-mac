@@ -201,7 +201,9 @@ class BrokerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             (root / 'RDR2.exe').write_text('import os\\nos.write(int(os.environ["WINESERVERSOCKET"]), b"handoff")\\n'.replace('\\n', '\n'))
-            broker = Broker(root / 'broker.sock', sys.executable, root, {})
+            # The fixture loader is Python, not Wine: don't let its startup
+            # generate bytecode inside a sealed app when testing bundled Python.
+            broker = Broker(root / 'broker.sock', sys.executable, root, {'PYTHONDONTWRITEBYTECODE': '1'})
             client, receiver = socket.socketpair()
             server_read, server_write = socket.socketpair()
             server_read.settimeout(5)

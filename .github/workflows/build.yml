@@ -29,6 +29,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/rdr2mac-extracted" "$RUNNER_TEMP/rdr2mac-evidence"
           ditto -x -k dist/RDR2Mac-UNSIGNED.zip "$RUNNER_TEMP/rdr2mac-extracted"
+          codesign --verify --deep --strict --verbose=4 "$RUNNER_TEMP/rdr2mac-extracted/RDR2 for Mac.app"
       - name: Run isolated engine regressions with bundled Python
         timeout-minutes: 5
         run: |
@@ -36,6 +37,23 @@ jobs:
           "$RUNNER_TEMP/rdr2mac-extracted/RDR2 for Mac.app/Contents/Resources/python/bin/python3" \
             -B -m unittest discover -s tests -p 'test*.py' -v \
             2>&1 | tee "$RUNNER_TEMP/rdr2mac-evidence/regressions.txt"
+      - name: Verify packaged HTTPS downloads without installing Wine
+        timeout-minutes: 2
+        run: |
+          APP="$RUNNER_TEMP/rdr2mac-extracted/RDR2 for Mac.app"
+          "$APP/Contents/Resources/python/bin/python3" -B -E -s -u - \
+            "$APP/Contents/Resources/engine" "$RUNNER_TEMP" <<'PY'
+          import sys
+          import tempfile
+          from pathlib import Path
+          sys.path.insert(0, sys.argv[1])
+          from storage import download, RUNTIME_URL, RUNTIME_SHA256
+          with tempfile.TemporaryDirectory(dir=sys.argv[2]) as directory:
+              destination = Path(directory) / "wine.sha256"
+              download(RUNTIME_URL + ".sha256", destination, limit=1024)
+              assert destination.read_text().split()[0] == RUNTIME_SHA256
+          print("Packaged HTTPS certificate validation and bounded download passed.")
+          PY
       - name: Exercise packaged status and native model without Wine
         timeout-minutes: 3
         env:
@@ -49,7 +67,7 @@ jobs:
             | tee "$RUNNER_TEMP/rdr2mac-evidence/model-smoke.jsonl"
           test ! -e "$RDR2MAC_CONFIG"
           test ! -d "$(dirname "$RDR2MAC_CONFIG")/Bottle"
-          codesign --verify --deep --strict "$APP" \
+          codesign --verify --deep --strict --verbose=4 "$APP" \
             2>&1 | tee "$RUNNER_TEMP/rdr2mac-evidence/post-smoke-signature.txt"
       - name: Capture optional hosted setup UI
         id: visual
