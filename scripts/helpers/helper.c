@@ -2,8 +2,6 @@
  * SocialClub behavior adapted from Matthias Schedel's 2026 MIT shim.
  * See THIRD_PARTY_NOTICES.md for the original license.
  */
-#define UNICODE
-#define _UNICODE
 #include <windows.h>
 #include <shellapi.h>
 #include <wchar.h>
