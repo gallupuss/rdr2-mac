@@ -6,6 +6,7 @@ import sys
 
 source = Path(sys.argv[1]).resolve()
 target = Path(sys.argv[2])
+supplements = Path(sys.argv[3]).resolve()
 metadata = source / "PYTHON.json"
 data = json.loads(metadata.read_text())
 paths = set()
@@ -36,10 +37,17 @@ for path in source.rglob("*"):
 target.mkdir(parents=True, exist_ok=True)
 shutil.copy2(metadata, target / "PYTHON.json")
 for name in sorted(paths):
-    path = (source / name).resolve()
-    if not path.is_relative_to(source) or not path.is_file():
-        raise SystemExit(f"Invalid or missing upstream license path: {name}")
-    destination = target / path.relative_to(source)
+    relative = Path(name)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise SystemExit(f"Invalid upstream license path: {name}")
+    path = (source / relative).resolve()
+    if not path.is_relative_to(source):
+        raise SystemExit(f"Invalid upstream license path: {name}")
+    if not path.is_file():
+        path = (supplements / relative).resolve()
+        if not path.is_relative_to(supplements) or not path.is_file():
+            raise SystemExit(f"Missing upstream license with no audited supplement: {name}")
+    destination = target / relative
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(path, destination)
 (target / "inventory.json").write_text(json.dumps(sorted(paths), indent=2) + "\n")

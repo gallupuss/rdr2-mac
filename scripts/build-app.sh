@@ -50,7 +50,7 @@ done < <(/usr/bin/find "$ROOT/engine" -type f -name '*.py' -print0)
 "$ROOT/scripts/build-helpers.sh" "$RES/helpers"
 tar -xzf "$CACHE/python.tar.gz" -C "$RES"
 zstd --decompress --stdout "$CACHE/python-full.tar.zst" | tar -xf - -C "$STAGE/full"
-"$RES/python/bin/python3" -I -B "$ROOT/scripts/collect-python-notices.py" "$STAGE/full/python" "$RES/Notices/python"
+"$RES/python/bin/python3" -I -B "$ROOT/scripts/collect-python-notices.py" "$STAGE/full/python" "$RES/Notices/python" "$ROOT/scripts/python-notices"
 cp "$ROOT/scripts/python-release.env" "$RES/Notices/python/provenance.env"
 cp "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_NOTICES.md" "$RES/Notices/"
 cp "$ROOT/scripts/Info.plist" "$APP/Contents/Info.plist"

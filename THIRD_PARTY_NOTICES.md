@@ -45,6 +45,14 @@ that inventory is absent. See the upstream
 [licensing instructions](https://gregoryszorc.com/docs/python-build-standalone/main/running.html#licensing).
 Build provenance, archive URLs and SHA-256 values are included beside the notices.
 
+The pinned 20260901 full archive references `licenses/LICENSE.zlib-ng.txt` but
+omits that file. The build retains the actual zlib-ng 2.2.4 notice as an audited
+supplement, not an empty substitute or a skipped license check:
+[`scripts/python-notices/licenses/LICENSE.zlib-ng.txt`](scripts/python-notices/licenses/LICENSE.zlib-ng.txt).
+Its source is [CPython's zlib-ng 2.2.4 dependency license](https://github.com/python/cpython-source-deps/blob/zlib-ng-2.2.4/LICENSE.md);
+the version is recorded in [the matching standalone-Python build inputs](https://github.com/astral-sh/python-build-standalone/blob/20260901/pythonbuild/downloads.py).
+Any other missing referenced notice still fails packaging.
+
 ## External software, not redistributed
 
 Wine/CrossOver, Apple's Game Porting Toolkit, Steam, Rockstar Games Launcher,
