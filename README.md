@@ -19,6 +19,11 @@ The initial publication is experimental source; consumer binary publication is
 gated on fresh-install/end-to-end checks and signing. Draft binaries and CI
 artifacts must not be presented as a verified release.
 
+![Native setup window captured on a GitHub-hosted Mac](docs/setup.png)
+
+The app builds and its initial UI has been visually checked. This is not evidence
+of a completed fresh installation or gameplay; see the verification record above.
+
 ## Requirements
 
 - Apple Silicon Mac. The app interface targets macOS 14 or later; this is **not**
