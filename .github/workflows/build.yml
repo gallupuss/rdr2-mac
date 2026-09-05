@@ -1,0 +1,87 @@
+name: Build experimental app
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unsigned:
+    runs-on: macos-15
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    env:
+      SWIFT_JOBS: "3"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Apple Silicon runner
+        run: test "$(uname -m)" = arm64
+      - name: Install build dependencies
+        run: brew install mingw-w64 zstd
+      - name: Build unsigned app
+        run: ./scripts/build-app.sh
+        timeout-minutes: 20
+      - name: Extract packaged app
+        timeout-minutes: 2
+        run: |
+          mkdir -p "$RUNNER_TEMP/rdr2mac-extracted" "$RUNNER_TEMP/rdr2mac-evidence"
+          ditto -x -k dist/RDR2Mac-UNSIGNED.zip "$RUNNER_TEMP/rdr2mac-extracted"
+      - name: Run isolated engine regressions with bundled Python
+        timeout-minutes: 5
+        run: |
+          compgen -G 'tests/test*.py' >/dev/null || { echo 'No regression tests found'; exit 1; }
+          "$RUNNER_TEMP/rdr2mac-extracted/RDR2 for Mac.app/Contents/Resources/python/bin/python3" \
+            -B -m unittest discover -s tests -p 'test*.py' -v \
+            2>&1 | tee "$RUNNER_TEMP/rdr2mac-evidence/regressions.txt"
+      - name: Exercise packaged status and native model without Wine
+        timeout-minutes: 3
+        env:
+          RDR2MAC_CONFIG: ${{ runner.temp }}/rdr2mac-isolated/config.json
+        run: |
+          APP="$RUNNER_TEMP/rdr2mac-extracted/RDR2 for Mac.app"
+          "$APP/Contents/Resources/python/bin/python3" -B -E -s -u \
+            "$APP/Contents/Resources/engine/launcher.py" status --config "$RDR2MAC_CONFIG" \
+            | tee "$RUNNER_TEMP/rdr2mac-evidence/status.jsonl"
+          "$APP/Contents/MacOS/RDR2Mac" --smoke \
+            | tee "$RUNNER_TEMP/rdr2mac-evidence/model-smoke.jsonl"
+          test ! -e "$RDR2MAC_CONFIG"
+          test ! -d "$(dirname "$RDR2MAC_CONFIG")/Bottle"
+          codesign --verify --deep --strict "$APP" \
+            2>&1 | tee "$RUNNER_TEMP/rdr2mac-evidence/post-smoke-signature.txt"
+      - name: Capture optional hosted setup UI
+        id: visual
+        continue-on-error: true
+        timeout-minutes: 1
+        env:
+          RDR2MAC_CONFIG: ${{ runner.temp }}/rdr2mac-isolated/config.json
+        run: |
+          APP="$RUNNER_TEMP/rdr2mac-extracted/RDR2 for Mac.app"
+          "$APP/Contents/Resources/python/bin/python3" -B -E -s -u \
+            scripts/capture-ci-ui.py "$APP" "$RUNNER_TEMP/rdr2mac-evidence"
+      - name: Record visual availability
+        if: always()
+        env:
+          VISUAL_OUTCOME: ${{ steps.visual.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/rdr2mac-evidence"
+          printf 'Optional hosted UI step: %s. Only a captured screenshot reviewed by a human is visual evidence.\n' \
+            "$VISUAL_OUTCOME" > "$RUNNER_TEMP/rdr2mac-evidence/visual-step.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RDR2Mac-UNSIGNED-experimental
+          path: dist/RDR2Mac-UNSIGNED.zip
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RDR2Mac-isolated-verification
+          path: ${{ runner.temp }}/rdr2mac-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+# Signing is deliberately local, not a PR-accessible self-hosted runner.
+# See docs/RELEASING.md for the manual Developer ID + notarytool profile path.

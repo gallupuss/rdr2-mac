@@ -1,0 +1,13 @@
+.DS_Store
+.build/
+dist/
+.build-deps/
+__pycache__/
+*.pyc
+.venv/
+*.xcuserstate
+.env*
+*.p12
+*.p8
+*.mobileprovision
+*.log
